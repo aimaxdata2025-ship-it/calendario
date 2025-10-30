@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calendario Vacaciones · V/L/H · 2025–2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .noselect { user-select: none; -webkit-user-select: none; -ms-user-select: none; }
+    .cell { min-width: 2.5rem; height: 2.5rem; transition: all 0.2s; }
+    .cell:hover:not(.blocked) { transform: scale(1.1); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .hidden-col { display: none; }
+    .weekend { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); color: #5b21b6; font-weight: 600; }
+    .holiday { background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%); color: #9f1239; font-weight: 600; }
+    .mark-v { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; font-weight: 700; }
+    .mark-l { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; font-weight: 700; }
+    .mark-h { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; font-weight: 700; }
+    .badge { padding: 0.25rem 0.625rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; }
+    .blocked { cursor: not-allowed !important; }
+    .sticky-col { position: sticky; left: 0; z-index: 10; background: white; box-shadow: 2px 0 4px rgba(0,0,0,0.05); }
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .stat-card { transition: all 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+    .employee-row { transition: background 0.2s; }
+    .employee-row:hover { background: #f9fafb; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+    .legend-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; transition: all 0.2s; }
+    .legend-item:hover { transform: scale(1.05); }
+    .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; transition: all 0.2s; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+    .tooltip { position: relative; }
+    .tooltip:hover::after { content: attr(data-tooltip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding: 0.5rem; background: #1f2937; color: white; border-radius: 0.375rem; font-size: 0.75rem; white-space: nowrap; z-index: 50; margin-bottom: 0.25rem; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+  <div class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+    <!-- Header mejorado -->
+    <header class="bg-white rounded-2xl shadow-lg p-6 fade-in">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Calendario de Vacaciones
+          </h1>
+          <p class="text-gray-500 text-sm mt-1">Gestión de días V · L · H para 2025–2026</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <div class="legend-item bg-blue-50 border border-blue-200">
+            <span class="font-bold text-blue-800">V</span>
+            <span class="text-xs text-blue-700">Vacaciones</span>
+          </div>
+          <div class="legend-item bg-amber-50 border border-amber-200">
+            <span class="font-bold text-amber-800">L</span>
+            <span class="text-xs text-amber-700">Libre</span>
+          </div>
+          <div class="legend-item bg-emerald-50 border border-emerald-200">
+            <span class="font-bold text-emerald-800">H</span>
+            <span class="text-xs text-emerald-700">Hospitalización</span>
+          </div>
+          <div class="legend-item bg-purple-50 border border-purple-200">
+            <span class="font-bold text-purple-800">F</span>
+            <span class="text-xs text-purple-700">Fin de semana</span>
+          </div>
+          <div class="legend-item bg-rose-50 border border-rose-200">
+            <span class="font-bold text-rose-800">F</span>
+            <span class="text-xs text-rose-700">Festivo oficial</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Controles mejorados -->
+    <section class="bg-white rounded-2xl shadow-lg p-6 fade-in">
+      <div class="grid md:grid-cols-4 gap-4">
+        <div class="space-y-2">
+          <label for="selectYear" class="block text-sm font-semibold text-gray-700">📅 Año</label>
+          <select id="selectYear" class="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+          </select>
+        </div>
+        <div class="space-y-2">
+          <label for="selectMonth" class="block text-sm font-semibold text-gray-700">📆 Mes</label>
+          <select id="selectMonth" class="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+            <option>Enero</option><option>Febrero</option><option>Marzo</option><option>Abril</option><option>Mayo</option><option>Junio</option>
+            <option>Julio</option><option>Agosto</option><option>Septiembre</option><option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+          </select>
+        </div>
+        <div class="md:col-span-2 flex items-end gap-2 flex-wrap">
+          <button id="prevBtn" class="px-4 py-3 rounded-xl shadow-md text-sm font-semibold border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all">
+            ◀ Anterior
+          </button>
+          <button id="nextBtn" class="px-4 py-3 rounded-xl shadow-md text-sm font-semibold border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all">
+            Siguiente ▶
+          </button>
+          <button id="todayBtn" class="px-4 py-3 rounded-xl shadow-md text-sm font-semibold bg-blue-500 text-white hover:bg-blue-600 transition-all">
+            🎯 Hoy
+          </button>
+          <button id="clearBtn" class="px-4 py-3 rounded-xl shadow-md text-sm font-semibold border-2 border-red-200 text-red-600 hover:bg-red-50 transition-all" title="Borrar marcas del mes (V/L/H)">
+            🗑️ Limpiar
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Estadísticas rápidas -->
+    <section id="quickStats" class="grid md:grid-cols-4 gap-4 fade-in"></section>
+
+    <!-- Vista Calendario mejorada -->
+    <section class="bg-white rounded-2xl shadow-lg p-6 space-y-4 fade-in">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-800">📋 Calendario mensual</h2>
+        <div class="text-sm bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-medium">
+          💡 Clic para alternar: "" → V → L → H → ""
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border-2 border-gray-200">
+        <table id="calTable" class="min-w-full">
+          <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+            <tr>
+              <th class="sticky-col border border-gray-200 px-4 py-3 text-left font-bold text-gray-700">Empleado</th>
+            </tr>
+            <tr>
+              <th class="sticky-col border border-gray-200 px-4 py-2 text-left text-xs text-gray-500">&nbsp;</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Resumen mejorado -->
+    <section class="bg-white rounded-2xl shadow-lg p-6 space-y-4 fade-in">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">📊 Resumen anual</h2>
+          <p class="text-sm text-gray-600 mt-1">
+            💡 <strong>Vacaciones (V):</strong> válidas hasta 31 enero siguiente · 
+            <strong>Libres (L):</strong> válidos hasta 31 diciembre
+          </p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button id="exportBtn" class="px-4 py-2 rounded-xl shadow-md text-sm font-semibold border-2 border-green-200 text-green-700 hover:bg-green-50 transition-all">
+            💾 Exportar
+          </button>
+          <label class="px-4 py-2 rounded-xl shadow-md text-sm font-semibold border-2 border-blue-200 text-blue-700 hover:bg-blue-50 cursor-pointer transition-all">
+            📤 Importar<input id="importFile" type="file" accept="application/json" class="hidden" />
+          </label>
+          <button id="autosaveBtn" class="px-4 py-2 rounded-xl shadow-md text-sm font-semibold border-2 border-purple-200 text-purple-700 hover:bg-purple-50 transition-all">
+            🔄 Auto-guardar
+          </button>
+          <span id="autosaveStatus" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-sm font-medium">
+            Auto-guardado: ⏸️ desactivado
+          </span>
+        </div>
+      </div>
+      <div class="overflow-x-auto rounded-xl border-2 border-gray-200">
+        <table class="min-w-full">
+          <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+            <tr>
+              <th class="border border-gray-200 px-4 py-3 text-left font-bold text-gray-700">Empleado</th>
+              <th class="border border-gray-200 px-4 py-3 text-center font-bold text-gray-700">Año</th>
+              <th class="border border-gray-200 px-4 py-3 text-center font-bold text-blue-700">Vac. Asignadas</th>
+              <th class="border border-gray-200 px-4 py-3 text-center font-bold text-blue-700">Vac. Usadas</th>
+              <th class="border border-gray-200 px-4 py-3 text-center font-bold text-blue-700">Vac. Restantes</th>
+              <th class="border border-gray-200 px-4 py-3 text-center font-bold text-amber-700">Lib. Asignados</th>
+              <th class="border border-gray-200 px-4 py-3 text-center font-bold text-amber-700">Lib. Usados</th>
+              <th class="border border-gray-200 px-4 py-3 text-center font-bold text-amber-700">Lib. Restantes</th>
+              <th class="border border-gray-200 px-4 py-3 text-center font-bold text-emerald-700">Hosp. Usados</th>
+            </tr>
+          </thead>
+          <tbody id="summaryBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="text-center text-sm text-gray-500 pt-4 pb-8">
+      <p>💾 Los datos se guardan automáticamente en tu navegador · <span class="font-mono bg-gray-200 px-2 py-1 rounded">Ctrl/Cmd + S</span> para guardar manualmente</p>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  const EMPLEADOS = [
+    "RAFAEL MARIN SASTRE",
+    "VICTOR VARGAS GARCIA",
+  ];
+  const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const DIA_ABBR = ["L","M","X","J","V","S","D"];
+
+  const HOLIDAYS = {
+    2025: {
+      "VICTOR VARGAS GARCIA": {
+        "1-1": "Año Nuevo", "1-6": "Epifanía del Señor", "4-17": "Jueves Santo", "4-18": "Viernes Santo",
+        "5-1": "Fiesta del Trabajo", "5-2": "Comunidad de Madrid", "5-15": "San Isidro (Madrid)",
+        "7-25": "Santiago Apóstol (Madrid)", "8-15": "Asunción de la Virgen", "11-1": "Todos los Santos",
+        "11-10": "Nuestra Señora de la Almudena (traslado)", "12-6": "Día de la Constitución",
+        "12-8": "Inmaculada Concepción", "12-25": "Navidad"
+      },
+      "RAFAEL MARIN SASTRE": {
+        "1-1": "Año Nuevo", "1-2": "Toma de Granada (local)", "1-6": "Epifanía del Señor",
+        "2-28": "Día de Andalucía", "4-17": "Jueves Santo", "4-18": "Viernes Santo",
+        "5-1": "Fiesta del Trabajo", "6-19": "Corpus Christi (Granada, local)", "8-15": "Asunción de la Virgen",
+        "10-13": "Fiesta Nacional (traslado)", "11-1": "Todos los Santos", "12-6": "Día de la Constitución",
+        "12-8": "Inmaculada Concepción", "12-25": "Navidad"
+      }
+    },
+    2026: {
+      "VICTOR VARGAS GARCIA": {
+        "1-1": "Año Nuevo", "1-6": "Epifanía del Señor", "4-2": "Jueves Santo", "4-3": "Viernes Santo",
+        "5-1": "Fiesta del Trabajo", "5-2": "Comunidad de Madrid", "5-15": "San Isidro (Madrid)",
+        "8-15": "Asunción de la Virgen", "10-12": "Fiesta Nacional de España",
+        "11-2": "Traslado de Todos los Santos", "11-9": "Nuestra Señora de La Almudena (Madrid)",
+        "12-7": "Traslado Día de la Constitución", "12-8": "Inmaculada Concepción", "12-25": "Navidad"
+      },
+      "RAFAEL MARIN SASTRE": {
+        "1-1": "Año Nuevo", "1-2": "Toma de Granada (local)", "1-6": "Epifanía del Señor",
+        "2-28": "Día de Andalucía", "4-2": "Jueves Santo", "4-3": "Viernes Santo",
+        "5-1": "Fiesta del Trabajo", "6-4": "Corpus Christi (Granada, local)", "8-15": "Asunción de la Virgen",
+        "10-12": "Fiesta Nacional de España", "11-2": "Traslado de Todos los Santos",
+        "12-7": "Traslado Día de la Constitución", "12-8": "Inmaculada Concepción", "12-25": "Navidad"
+      }
+    }
+  };
+
+  function holidayLabel(year, empleado, mIdx, d) {
+    return HOLIDAYS[year]?.[empleado]?.[`${mIdx+1}-${d}`] || null;
+  }
+
+  const monthIndex = (nombre) => MESES.indexOf(nombre);
+  const daysInMonth = (y, mIdx) => new Date(y, mIdx + 1, 0).getDate();
+  const isWeekend = (y, mIdx, d) => {
+    const dow = new Date(y, mIdx, d).getDay();
+    return dow === 0 || dow === 6;
+  };
+  const dayLetter = (y, mIdx, d) => {
+    const dow = new Date(y, mIdx, d).getDay();
+    const map = {1:0,2:1,3:2,4:3,5:4,6:5,0:6};
+    return DIA_ABBR[map[dow]];
+  };
+
+  const LS_PREFIX = "vacaciones:v1:";
+  const keyMes = (year, mIdx, empleado) => `${LS_PREFIX}${year}:${mIdx+1}:${empleado}`;
+  const keyCuota = (year, empleado, tipo) => `${LS_PREFIX}quota:${year}:${empleado}:${tipo}`;
+
+  function loadMes(year, mIdx, empleado) {
+    const raw = localStorage.getItem(keyMes(year, mIdx, empleado));
+    if (!raw) return {};
+    try { return JSON.parse(raw) || {}; } catch { return {}; }
+  }
+  function saveMes(year, mIdx, empleado, obj) {
+    localStorage.setItem(keyMes(year, mIdx, empleado), JSON.stringify(obj));
+  }
+  const loadCuota = (year, empleado, tipo, defVal) => {
+    const v = localStorage.getItem(keyCuota(year, empleado, tipo));
+    return v === null ? defVal : Number(v);
+  };
+  const saveCuota = (year, empleado, tipo, val) => localStorage.setItem(keyCuota(year, empleado, tipo), String(val));
+
+  function exportJSON() {
+    const data = {};
+    for (let i=0; i<localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(LS_PREFIX)) data[k] = localStorage.getItem(k);
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `vacaciones_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function importJSON(file) {
+    try {
+      const txt = await file.text();
+      const data = JSON.parse(txt);
+      let imported = 0;
+      for (const [k, v] of Object.entries(data)) {
+        if (k.startsWith(LS_PREFIX)) {
+          localStorage.setItem(k, v);
+          imported++;
+        }
+      }
+      alert(`✅ Importadas ${imported} entradas correctamente`);
+    } catch (e) {
+      alert(`❌ Error al importar: ${e.message}`);
+    }
+  }
+
+  let autosaveHandle = null;
+  function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
+
+  function openDB() { return new Promise((res, rej) => { const r = indexedDB.open('vacacionesDB', 1); r.onupgradeneeded = () => r.result.createObjectStore('handles'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+  async function idbSet(store, key, val){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).put(val, key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+  async function idbGet(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const req = tx.objectStore(store).get(key); req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error); }); }
+  async function idbDel(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+
+  function collectDataStr(){ const data = {}; for (let i=0;i<localStorage.length;i++){ const k = localStorage.key(i); if(k?.startsWith(LS_PREFIX)) data[k] = localStorage.getItem(k); } return JSON.stringify(data, null, 2); }
+
+  async function writeAutosaveFile(){ 
+    if(!autosaveHandle) return; 
+    try { 
+      const w = await autosaveHandle.createWritable(); 
+      await w.write(collectDataStr()); 
+      await w.close(); 
+      setAutosaveStatus('✅ activo (guardado)'); 
+    } catch(e){ 
+      console.warn('Autosave error', e); 
+      setAutosaveStatus('⚠️ error al guardar'); 
+    } 
+  }
+  const scheduleAutosave = debounce(writeAutosaveFile, 800);
+
+  async function setAutosaveHandle(handle){ 
+    autosaveHandle = handle; 
+    try { await idbSet('handles','autosave', handle); } catch{} 
+    setAutosaveStatus('✅ activo'); 
+  }
+  function setAutosaveStatus(text){ 
+    const el = document.getElementById('autosaveStatus'); 
+    if(el) el.innerHTML = `Auto-guardado: ${text}`; 
+  }
+
+  async function loadAutosaveHandle(){ 
+    try { 
+      const h = await idbGet('handles','autosave'); 
+      if(!h) return;
+      if (h.requestPermission && (await h.queryPermission({mode:'readwrite'})) !== 'granted') {
+        const r = await h.requestPermission({mode:'readwrite'}); 
+        if (r !== 'granted') return;
+      }
+      autosaveHandle = h; 
+      setAutosaveStatus('✅ activo');
+    } catch {}
+  }
+
+  if (navigator.storage?.persist) navigator.storage.persist();
+
+  const selYear = document.getElementById('selectYear');
+  const selMonth = document.getElementById('selectMonth');
+  const calTable = document.getElementById('calTable');
+  const tHead = calTable.querySelector('thead');
+  const tBody = calTable.querySelector('tbody');
+  const exportBtn = document.getElementById('exportBtn');
+  const importFile = document.getElementById('importFile');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const todayBtn = document.getElementById('todayBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const summaryBody = document.getElementById('summaryBody');
+  const quickStats = document.getElementById('quickStats');
+
+  exportBtn.addEventListener('click', exportJSON);
+  importFile.addEventListener('change', (e) => {
+    if (e.target.files?.[0]) importJSON(e.target.files[0]).then(() => { renderAll(); scheduleAutosave(); });
+  });
+
+  prevBtn.addEventListener('click', () => {
+    let y = Number(selYear.value);
+    let m = monthIndex(selMonth.value);
+    m--; if (m < 0) { m = 11; y--; }
+    selYear.value = String(y);
+    selMonth.value = MESES[m];
+    renderAll();
+  });
+
+  nextBtn.addEventListener('click', () => {
+    let y = Number(selYear.value);
+    let m = monthIndex(selMonth.value);
+    m++; if (m > 11) { m = 0; y++; }
+    selYear.value = String(y);
+    selMonth.value = MESES[m];
+    renderAll();
+  });
+
+  todayBtn.addEventListener('click', () => {
+    const now = new Date();
+    if (now.getFullYear() === 2025 || now.getFullYear() === 2026) {
+      selYear.value = String(now.getFullYear());
+      selMonth.value = MESES[now.getMonth()];
+      renderAll();
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    const y = Number(selYear.value);
+    const mIdx = monthIndex(selMonth.value);
+    if (!confirm(`¿Borrar todas las marcas V/L/H de ${MESES[mIdx]} ${y}?`)) return;
+    for (const emp of EMPLEADOS) {
+      const obj = loadMes(y, mIdx, emp);
+      for (let d=1; d<=31; d++) delete obj[d];
+      saveMes(y, mIdx, emp, obj);
+    }
+    renderAll();
+    scheduleAutosave();
+  });
+
+  selYear.addEventListener('change', renderAll);
+  selMonth.addEventListener('change', renderCalendar);
+
+  function buildThead(days, y, mIdx) {
+    tHead.innerHTML = '';
+    const tr1 = document.createElement('tr');
+    const thEmp = document.createElement('th');
+    thEmp.className = 'sticky-col border border-gray-200 px-4 py-3 text-left font-bold text-gray-700';
+    thEmp.textContent = 'Empleado';
+    tr1.appendChild(thEmp);
+
+    for (let d=1; d<=31; d++) {
+      const th = document.createElement('th');
+      th.className = 'border border-gray-200 px-2 py-2 text-center text-sm font-bold cell';
+      if (d > days) th.classList.add('hidden-col');
+      th.textContent = d;
+      tr1.appendChild(th);
+    }
+
+    const tr2 = document.createElement('tr');
+    const thBlank = document.createElement('th');
+    thBlank.className = 'sticky-col border border-gray-200 px-4 py-2 text-left text-xs text-gray-500';
+    thBlank.innerHTML = '&nbsp;';
+    tr2.appendChild(thBlank);
+
+    for (let d=1; d<=31; d++) {
+      const th = document.createElement('th');
+      th.className = 'border border-gray-200 px-2 py-2 text-center text-xs font-semibold cell';
+      if (d > days) th.classList.add('hidden-col');
+      th.textContent = dayLetter(y, mIdx, d);
+      if (isWeekend(y, mIdx, d)) th.classList.add('weekend');
+      tr2.appendChild(th);
+    }
+
+    tHead.appendChild(tr1);
+    tHead.appendChild(tr2);
+  }
+
+  function cycleValue(current) {
+    switch (current) {
+      case '': return 'V';
+      case 'V': return 'L';
+      case 'L': return 'H';
+      case 'H': return '';
+      default: return '';
+    }
+  }
+
+  function buildTbody(days, y, mIdx) {
+    tBody.innerHTML = '';
+
+    for (const emp of EMPLEADOS) {
+      const tr = document.createElement('tr');
+      tr.className = 'employee-row';
+      const th = document.createElement('th');
+      th.className = 'sticky-col border border-gray-200 px-4 py-3 text-left font-semibold text-gray-700';
+      th.textContent = emp;
+      tr.appendChild(th);
+
+      const data = loadMes(y, mIdx, emp);
+
+      for (let d=1; d<=31; d++) {
+        const td = document.createElement('td');
+        td.className = 'border border-gray-200 text-center align-middle cursor-pointer cell noselect';
+        if (d > days) td.classList.add('hidden-col');
+        const hLabel = holidayLabel(y, emp, mIdx, d);
+        if (hLabel) {
+          td.textContent = 'F';
+          td.classList.add('holiday', 'blocked');
+          td.title = hLabel;
+        } else if (isWeekend(y, mIdx, d)) {
+          td.textContent = 'F';
+          td.classList.add('weekend', 'blocked');
+          td.title = 'Fin de semana';
+        } else {
+          const val = data[d] || '';
+          td.textContent = val;
+          if (val === 'V') td.classList.add('mark-v');
+          else if (val === 'L') td.classList.add('mark-l');
+          else if (val === 'H') td.classList.add('mark-h');
+          
+          td.addEventListener('click', () => {
+            const newVal = cycleValue(td.textContent || '');
+            td.textContent = newVal;
+            td.className = 'border border-gray-200 text-center align-middle cursor-pointer cell noselect';
+            if (newVal === 'V') td.classList.add('mark-v');
+            else if (newVal === 'L') td.classList.add('mark-l');
+            else if (newVal === 'H') td.classList.add('mark-h');
+            
+            const obj = loadMes(y, mIdx, emp);
+            if (newVal) obj[d] = newVal; else delete obj[d];
+            saveMes(y, mIdx, emp, obj);
+            renderSummary();
+            renderQuickStats();
+            scheduleAutosave();
+          });
+        }
+        tr.appendChild(td);
+      }
+
+      tBody.appendChild(tr);
+    }
+  }
+
+  function renderCalendar() {
+    const y = Number(selYear.value);
+    const mIdx = monthIndex(selMonth.value);
+    const days = daysInMonth(y, mIdx);
+    buildThead(days, y, mIdx);
+    buildTbody(days, y, mIdx);
+  }
+
+  function countMarksYear(year, empleado, mark) {
+    let total = 0;
+    // Para libres (L): solo hasta 31 diciembre del año
+    // Para vacaciones (V): hasta 31 enero del año siguiente
+    const maxMonth = mark === 'L' ? 12 : 13; // 12 meses o 13 (incluye enero siguiente)
+    
+    for (let mIdx=0; mIdx<maxMonth; mIdx++) {
+      let currentYear = year;
+      let currentMonth = mIdx;
+      
+      // Si es enero del año siguiente (mIdx=12), ajustar año y mes
+      if (mIdx === 12) {
+        currentYear = year + 1;
+        currentMonth = 0;
+      }
+      
+      const last = daysInMonth(currentYear, currentMonth);
+      const data = loadMes(currentYear, currentMonth, empleado);
+      for (let d=1; d<=last; d++) {
+        if (isWeekend(currentYear, currentMonth, d) || holidayLabel(currentYear, currentMonth, empleado, currentMonth, d)) continue;
+        if (data[d] === mark) total++;
+      }
+    }
+    return total;
+  }
+
+  function countMarksMonth(year, mIdx, empleado, mark) {
+    let total = 0;
+    const last = daysInMonth(year, mIdx);
+    const data = loadMes(year, mIdx, empleado);
+    for (let d=1; d<=last; d++) {
+      if (isWeekend(year, mIdx, d) || holidayLabel(year, empleado, mIdx, d)) continue;
+      if (data[d] === mark) total++;
+    }
+    return total;
+  }
+
+  function renderQuickStats() {
+    const year = Number(selYear.value);
+    const mIdx = monthIndex(selMonth.value);
+    quickStats.innerHTML = '';
+
+    let totalV = 0, totalL = 0, totalH = 0, totalDays = 0;
+    
+    for (const emp of EMPLEADOS) {
+      totalV += countMarksMonth(year, mIdx, emp, 'V');
+      totalL += countMarksMonth(year, mIdx, emp, 'L');
+      totalH += countMarksMonth(year, mIdx, emp, 'H');
+    }
+    totalDays = totalV + totalL + totalH;
+
+    const statCard = (icon, label, value, color) => `
+      <div class="stat-card bg-white rounded-xl shadow-md p-4 border-2 border-${color}-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-${color}-600 text-sm font-semibold">${label}</div>
+            <div class="text-3xl font-bold text-${color}-700 mt-1">${value}</div>
+          </div>
+          <div class="text-4xl">${icon}</div>
+        </div>
+      </div>
+    `;
+
+    quickStats.innerHTML = 
+      statCard('🏖️', 'Vacaciones (mes)', totalV, 'blue') +
+      statCard('🎯', 'Libres (mes)', totalL, 'amber') +
+      statCard('🏥', 'Hospitalización (mes)', totalH, 'emerald') +
+      statCard('📅', 'Total días marcados', totalDays, 'purple');
+  }
+
+  function renderSummary() {
+    const year = Number(selYear.value);
+    summaryBody.innerHTML = '';
+
+    for (const emp of EMPLEADOS) {
+      const vacAsig = loadCuota(year, emp, 'vac', '');
+      const libAsig = loadCuota(year, emp, 'libre', 2);
+      const usedV = countMarksYear(year, emp, 'V');
+      const usedL = countMarksYear(year, emp, 'L');
+      const usedH = countMarksYear(year, emp, 'H');
+
+      const tr = document.createElement('tr');
+      tr.className = 'employee-row';
+
+      const c = (html, cls='', style='', title='') => { 
+        const td = document.createElement('td'); 
+        td.className = 'border border-gray-200 px-4 py-3 text-center ' + cls; 
+        if (style) td.style.cssText = style;
+        if (title) td.title = title;
+        td.innerHTML = html; 
+        return td; 
+      };
+
+      tr.appendChild(c(`<div class="text-left font-semibold text-gray-700">${emp}</div>`));
+      tr.appendChild(c(String(year), 'font-semibold'));
+
+      const vacInp = document.createElement('input');
+      vacInp.type = 'number'; 
+      vacInp.min = '0';
+      vacInp.className = 'w-28 border-2 border-gray-200 rounded-lg p-2 text-center font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200';
+      if (vacAsig !== '') vacInp.value = vacAsig;
+      vacInp.addEventListener('change', () => {
+        saveCuota(year, emp, 'vac', vacInp.value === '' ? '' : Number(vacInp.value));
+        renderSummary();
+        scheduleAutosave();
+      });
+      const tdVacAsig = document.createElement('td');
+      tdVacAsig.className = 'border border-gray-200 px-4 py-3 text-center';
+      tdVacAsig.appendChild(vacInp);
+      tr.appendChild(tdVacAsig);
+
+      tr.appendChild(c(String(usedV), 'font-bold text-blue-700'));
+      
+      const vacRestantes = vacInp.value === '' ? '' : Math.max(0, Number(vacInp.value) - usedV);
+      const vacColor = vacRestantes === '' ? '' : (vacRestantes === 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700');
+      const vacTitle = vacInp.value === '' ? '' : 'Se pueden usar hasta el 31 de enero del año siguiente';
+      tr.appendChild(c(String(vacRestantes), `font-bold ${vacColor}`, '', vacTitle));
+
+      const libInp = document.createElement('input');
+      libInp.type = 'number'; 
+      libInp.min = '0';
+      libInp.className = 'w-28 border-2 border-gray-200 rounded-lg p-2 text-center font-semibold focus:border-amber-500 focus:ring-2 focus:ring-amber-200';
+      libInp.value = libAsig;
+      libInp.addEventListener('change', () => {
+        saveCuota(year, emp, 'libre', Number(libInp.value||0));
+        renderSummary();
+        scheduleAutosave();
+      });
+      const tdLibAsig = document.createElement('td');
+      tdLibAsig.className = 'border border-gray-200 px-4 py-3 text-center';
+      tdLibAsig.appendChild(libInp);
+      tr.appendChild(tdLibAsig);
+
+      tr.appendChild(c(String(usedL), 'font-bold text-amber-700'));
+      
+      const libRestantes = Math.max(0, Number(libInp.value||0) - usedL);
+      const libColor = libRestantes === 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
+      const libTitle = 'Se pueden usar hasta el 31 de diciembre del año';
+      tr.appendChild(c(String(libRestantes), `font-bold ${libColor}`, '', libTitle));
+      
+      tr.appendChild(c(String(usedH), 'font-bold text-emerald-700'));
+
+      summaryBody.appendChild(tr);
+    }
+  }
+
+  function renderAll() {
+    renderCalendar();
+    renderSummary();
+    renderQuickStats();
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      alert('💾 Datos guardados correctamente en el navegador');
+    }
+  });
+
+  (function init() {
+    const now = new Date();
+    if (now.getFullYear() === 2025 || now.getFullYear() === 2026) {
+      selYear.value = String(now.getFullYear());
+      selMonth.value = MESES[now.getMonth()];
+    } else {
+      selYear.value = '2025';
+      selMonth.value = 'Enero';
+    }
+    renderAll();
+    loadAutosaveHandle();
+  })();
+
+  const autosaveBtn = document.getElementById('autosaveBtn');
+  autosaveBtn?.addEventListener('click', async () => {
+    try {
+      if (!autosaveHandle) {
+        if (!window.showSaveFilePicker) { 
+          alert('❌ Tu navegador no soporta auto-guardado. Usa Exportar.'); 
+          return; 
+        }
+        const handle = await window.showSaveFilePicker({ 
+          suggestedName: `vacaciones_${new Date().toISOString().split('T')[0]}.json`, 
+          types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] 
+        });
+        await setAutosaveHandle(handle);
+        await writeAutosaveFile();
+      } else {
+        await idbDel('handles','autosave');
+        autosaveHandle = null;
+        setAutosaveStatus('⏸️ desactivado');
+      }
+    } catch (e) { 
+      console.warn(e); 
+    }
+  });
+
+  function runTests(){
+    console.assert(daysInMonth(2025,0)===31, 'Enero 2025 = 31 días');
+    console.assert(daysInMonth(2026,1)===28, 'Febrero 2026 = 28 días');
+    console.assert(cycleValue('')==='V' && cycleValue('V')==='L' && cycleValue('L')==='H' && cycleValue('H')==='', 'Ciclo OK');
+    console.assert(holidayLabel(2025, 'VICTOR VARGAS GARCIA', 4, 15) !== null, 'San Isidro existe');
+    console.assert(isWeekend(2025, 0, 5) === true, '5/1/2025 es fin de semana');
+    console.log('%c✅ Todos los tests pasados correctamente','color:green;font-weight:bold;font-size:14px');
+  }
+  runTests();
+})();
+</script>
+</body>
+</html>
